@@ -1,0 +1,45 @@
+[tool.poetry]
+name = "dreamerv3-torch"
+version = "0.1.0"
+description = ""
+authors = ["wassname <github@wassname.org>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+torch = {version = "^2.1.0+cu121", source = "pytorch"}
+pandas = "^1.2.4"
+matplotlib = "^3.5.0"
+"ruamel.yaml" = "^0.17.4"
+moviepy = "^1.0.3"
+einops = "^0.3.0"
+protobuf = "^3.10.0"
+gymnasium = {version = "^v0.29.1", extras = ["other"]}
+# gym = "^0.19.0"
+# mujoco = "^2.3.5"
+# dm_control = "^1.0.9"
+scipy = "^1.8.0"
+# memory_maze = "^1.0.3"
+# atari-py = "^0.2.9"
+crafter = "^1.8.0"
+opencv-python = "^4.7.0.72"
+numpy = "^1.21.0"
+tensorboard = "^2.6.0"
+# minerl = "^0.4.4"
+jaxtyping = "^0.2.2"
+# typeguard = "^4.2.20"
+beartype = "^0.18.5"
+tqdm = "^4.66.4"
+loguru = "^0.7.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[[tool.poetry.source]]
+name = "pytorch"
+url = "https://download.pytorch.org/whl/cu121"
+priority = "explicit"
+
+

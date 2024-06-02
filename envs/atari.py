@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 import numpy as np
 
 
@@ -38,7 +38,7 @@ class Atari:
             from PIL import Image
 
             self._image = Image
-        import gym.envs.atari
+        import gymnasium as gym.envs.atari
 
         if name == "james_bond":
             name = "jamesbond"
