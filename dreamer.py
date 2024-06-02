@@ -4,12 +4,12 @@ import os
 import pathlib
 import sys
 
-os.environ["MUJOCO_GL"] = "osmesa"
+# os.environ["MUJOCO_GL"] = "osmesa"
 
 import numpy as np
 import ruamel.yaml as yaml
 
-sys.path.append(str(pathlib.Path(__file__).parent))
+# sys.path.append(str(pathlib.Path(__file__).parent))
 
 import exploration as expl
 import models
@@ -21,15 +21,19 @@ import torch
 from torch import nn
 from torch import distributions as torchd
 
+from loguru import logger
+from tqdm.auto import tqdm
+logger.remove()
+logger.add(lambda msg: tqdm.write(msg, end=""), colorize=True)
 
 to_np = lambda x: x.detach().cpu().numpy()
 
 
 class Dreamer(nn.Module):
-    def __init__(self, obs_space, act_space, config, logger, dataset):
+    def __init__(self, obs_space, act_space, config, tlogger, dataset):
         super(Dreamer, self).__init__()
         self._config = config
-        self._logger = logger
+        self._logger = tlogger
         self._should_log = tools.Every(config.log_every)
         batch_steps = config.batch_size * config.batch_length
         self._should_train = tools.Every(batch_steps / config.train_ratio)
@@ -38,7 +42,7 @@ class Dreamer(nn.Module):
         self._should_expl = tools.Until(int(config.expl_until / config.action_repeat))
         self._metrics = {}
         # this is update step
-        self._step = logger.step // config.action_repeat
+        self._step = tlogger.step // config.action_repeat
         self._update_count = 0
         self._dataset = dataset
         self._wm = models.WorldModel(obs_space, act_space, self._step, config)
@@ -63,7 +67,7 @@ class Dreamer(nn.Module):
                 if self._should_pretrain()
                 else self._should_train(step)
             )
-            for _ in range(steps):
+            for _ in tqdm(range(steps), desc='minitrain'):
                 self._train(next(self._dataset))
                 self._update_count += 1
                 self._metrics["update_count"] = self._update_count
@@ -215,15 +219,15 @@ def main(config):
     config.log_every //= config.action_repeat
     config.time_limit //= config.action_repeat
 
-    print("Logdir", logdir)
+    logger.info(f"Logdir {logdir}")
     logdir.mkdir(parents=True, exist_ok=True)
     config.traindir.mkdir(parents=True, exist_ok=True)
     config.evaldir.mkdir(parents=True, exist_ok=True)
     step = count_steps(config.traindir)
     # step in logger is environmental step
-    logger = tools.Logger(logdir, config.action_repeat * step)
+    tlogger = tools.Logger(logdir, config.action_repeat * step)
 
-    print("Create envs.")
+    logger.info("Create envs.")
     if config.offline_traindir:
         directory = config.offline_traindir.format(**vars(config))
     else:
@@ -244,13 +248,13 @@ def main(config):
         train_envs = [Damy(env) for env in train_envs]
         eval_envs = [Damy(env) for env in eval_envs]
     acts = train_envs[0].action_space
-    print("Action Space", acts)
+    logger.info(f"Action Space {acts}" )
     config.num_actions = acts.n if hasattr(acts, "n") else acts.shape[0]
 
     state = None
     if not config.offline_traindir:
         prefill = max(0, config.prefill - count_steps(config.traindir))
-        print(f"Prefill dataset ({prefill} steps).")
+        logger.info(f"Prefill dataset ({prefill} steps).")
         if hasattr(acts, "discrete"):
             random_actor = tools.OneHotDist(
                 torch.zeros(config.num_actions).repeat(config.envs, 1)
@@ -274,21 +278,21 @@ def main(config):
             train_envs,
             train_eps,
             config.traindir,
-            logger,
+            tlogger,
             limit=config.dataset_size,
             steps=prefill,
         )
-        logger.step += prefill * config.action_repeat
-        print(f"Logger: ({logger.step} steps).")
+        tlogger.step += prefill * config.action_repeat
+        logger.info(f"Logger: ({tlogger.step} steps).")
 
-    print("Simulate agent.")
+    logger.info("Simulate agent.")
     train_dataset = make_dataset(train_eps, config)
     eval_dataset = make_dataset(eval_eps, config)
     agent = Dreamer(
         train_envs[0].observation_space,
         train_envs[0].action_space,
         config,
-        logger,
+        tlogger,
         train_dataset,
     ).to(config.device)
     agent.requires_grad_(requires_grad=False)
@@ -299,39 +303,43 @@ def main(config):
         agent._should_pretrain._once = False
 
     # make sure eval will be executed once after config.steps
-    while agent._step < config.steps + config.eval_every:
-        logger.write()
-        if config.eval_episode_num > 0:
-            print("Start evaluation.")
-            eval_policy = functools.partial(agent, training=False)
-            tools.simulate(
-                eval_policy,
-                eval_envs,
-                eval_eps,
-                config.evaldir,
-                logger,
-                is_eval=True,
-                episodes=config.eval_episode_num,
+    with tqdm(total=config.steps + config.eval_every) as pbar:
+        while agent._step < config.steps + config.eval_every:
+            tlogger.write()
+            if config.eval_episode_num > 0:
+                logger.info("Start evaluation.")
+                eval_policy = functools.partial(agent, training=False)
+                tools.simulate(
+                    eval_policy,
+                    eval_envs,
+                    eval_eps,
+                    config.evaldir,
+                    tlogger,
+                    is_eval=True,
+                    episodes=config.eval_episode_num,
+                    video_pred_log=config.video_pred_log,
+                )
+                if config.video_pred_log:
+                    video_pred = agent._wm.video_pred(next(eval_dataset))
+                    tlogger.video("eval_openl", to_np(video_pred))
+            logger.info("Start training.")
+            state = tools.simulate(
+                agent,
+                train_envs,
+                train_eps,
+                config.traindir,
+                tlogger,
+                limit=config.dataset_size,
+                steps=config.eval_every,
+                state=state,
             )
-            if config.video_pred_log:
-                video_pred = agent._wm.video_pred(next(eval_dataset))
-                logger.video("eval_openl", to_np(video_pred))
-        print("Start training.")
-        state = tools.simulate(
-            agent,
-            train_envs,
-            train_eps,
-            config.traindir,
-            logger,
-            limit=config.dataset_size,
-            steps=config.eval_every,
-            state=state,
-        )
-        items_to_save = {
-            "agent_state_dict": agent.state_dict(),
-            "optims_state_dict": tools.recursively_collect_optim_state_dict(agent),
-        }
-        torch.save(items_to_save, logdir / "latest.pt")
+            items_to_save = {
+                "agent_state_dict": agent.state_dict(),
+                "optims_state_dict": tools.recursively_collect_optim_state_dict(agent),
+            }
+            torch.save(items_to_save, logdir / "latest.pt")
+            logger.info(f"Saved model to {logdir / 'latest.pt'}")
+            pbar.update_to(agent._step)
     for env in train_envs + eval_envs:
         try:
             env.close()

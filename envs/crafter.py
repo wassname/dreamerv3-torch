@@ -37,7 +37,7 @@ class Crafter:
     @property
     def action_space(self):
         action_space = self._env.action_space
-        action_space.discrete = True
+        # action_space.discrete = True
         return action_space
 
     def step(self, action):
@@ -60,7 +60,7 @@ class Crafter:
     def render(self):
         return self._env.render()
 
-    def reset(self):
+    def reset(self, seed=None, options=None):
         image = self._env.reset()
         obs = {
             "image": image,
