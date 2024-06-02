@@ -1,3 +1,13 @@
+
+Fork for trying craftax-symbolic (to simply obs parsing) and an LLM (to test if pretrained knowledge helps)... WIP
+
+
+```sh
+poetry install
+poetry shell
+python3 dreamer.py --configs crafter --task crafter_reward --logdir ./logdir/crafter
+```
+
 # dreamerv3-torch
 Pytorch implementation of [Mastering Diverse Domains through World Models](https://arxiv.org/abs/2301.04104v1). DreamerV3 is a scalable algorithm that outperforms previous approaches across various domains with fixed hyperparameters.
 
@@ -7,7 +17,7 @@ Pytorch implementation of [Mastering Diverse Domains through World Models](https
 
 Get dependencies with python 3.9:
 ```
-pip install -r requirements.txt
+poetry install
 ```
 Run training on DMC Vision:
 ```
