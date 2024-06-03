@@ -387,8 +387,8 @@ class MultiDecoder(nn.Module):
             for k, v in shapes.items()
             if len(v) in (1, 2) and re.match(mlp_keys, k)
         }
-        print("Decoder CNN shapes:", self.cnn_shapes)
-        print("Decoder MLP shapes:", self.mlp_shapes)
+        logger.info("Decoder CNN shapes: %s", self.cnn_shapes)
+        logger.info("Decoder MLP shapes: %s", self.mlp_shapes)
 
         if self.cnn_shapes:
             some_shape = list(self.cnn_shapes.values())[0]

@@ -117,7 +117,7 @@ crafter:
   action_repeat: 1
   envs: 1
   train_ratio: 512
-  video_pred_log: true
+  video_pred_log: false # FIXME
   dyn_hidden: 1024
   dyn_deter: 4096
   units: 1024

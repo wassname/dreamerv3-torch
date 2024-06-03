@@ -67,7 +67,7 @@ class Dreamer(nn.Module):
                 if self._should_pretrain()
                 else self._should_train(step)
             )
-            for _ in tqdm(range(steps), desc='minitrain'):
+            for _ in range(steps):
                 self._train(next(self._dataset))
                 self._update_count += 1
                 self._metrics["update_count"] = self._update_count
@@ -318,6 +318,7 @@ def main(config):
                     is_eval=True,
                     episodes=config.eval_episode_num,
                     video_pred_log=config.video_pred_log,
+                    pbar=pbar,
                 )
                 if config.video_pred_log:
                     video_pred = agent._wm.video_pred(next(eval_dataset))
@@ -339,7 +340,7 @@ def main(config):
             }
             torch.save(items_to_save, logdir / "latest.pt")
             logger.info(f"Saved model to {logdir / 'latest.pt'}")
-            pbar.update_to(agent._step)
+            pbar.update(agent._step-pbar.n) # 16858 at a time
     for env in train_envs + eval_envs:
         try:
             env.close()

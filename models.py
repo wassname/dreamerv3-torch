@@ -4,6 +4,7 @@ from torch import nn
 
 import networks
 import tools
+from loguru import logger
 
 to_np = lambda x: x.detach().cpu().numpy()
 
@@ -96,7 +97,7 @@ class WorldModel(nn.Module):
             opt=config.opt,
             use_amp=self._use_amp,
         )
-        print(
+        logger.info(
             f"Optimizer model_opt has {sum(param.numel() for param in self.parameters())} variables."
         )
         # other losses are scaled by 1.0.
@@ -261,7 +262,7 @@ class ImagBehavior(nn.Module):
             config.actor["grad_clip"],
             **kw,
         )
-        print(
+        logger.info(
             f"Optimizer actor_opt has {sum(param.numel() for param in self.actor.parameters())} variables."
         )
         self._value_opt = tools.Optimizer(
@@ -272,7 +273,7 @@ class ImagBehavior(nn.Module):
             config.critic["grad_clip"],
             **kw,
         )
-        print(
+        logger.info(
             f"Optimizer value_opt has {sum(param.numel() for param in self.value.parameters())} variables."
         )
         if self._config.reward_EMA:
