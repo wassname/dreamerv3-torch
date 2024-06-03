@@ -6,6 +6,8 @@ import networks
 import tools
 from loguru import logger
 
+from envs.craftax_env import state2img
+
 to_np = lambda x: x.detach().cpu().numpy()
 
 
@@ -174,7 +176,8 @@ class WorldModel(nn.Module):
     # this function is called during both rollout and training
     def preprocess(self, obs):
         obs = obs.copy()
-        obs["image"] = torch.Tensor(obs["image"]) / 255.0
+        if "image" in obs:
+            obs["image"] = torch.Tensor(obs["image"]) / 255.0
         if "discount" in obs:
             obs["discount"] *= self._config.discount
             # (batch_size, batch_length) -> (batch_size, batch_length, 1)
@@ -187,24 +190,37 @@ class WorldModel(nn.Module):
         obs = {k: torch.Tensor(v).to(self._config.device) for k, v in obs.items()}
         return obs
 
-    def video_pred(self, data):
+    def video_pred(self, data, env_state= None):
+        # FIXME: in crafter we are not imagining image
         data = self.preprocess(data)
         embed = self.encoder(data)
 
         states, _ = self.dynamics.observe(
             embed[:6, :5], data["action"][:6, :5], data["is_first"][:6, :5]
         )
-        recon = self.heads["decoder"](self.dynamics.get_feat(states))["image"].mode()[
-            :6
-        ]
+        # FIXME: assume decoder returns image
+        recon = self.heads["decoder"](self.dynamics.get_feat(states))
         reward_post = self.heads["reward"](self.dynamics.get_feat(states)).mode()[:6]
         init = {k: v[:, -1] for k, v in states.items()}
         prior = self.dynamics.imagine_with_action(data["action"][:6, 5:], init)
-        openl = self.heads["decoder"](self.dynamics.get_feat(prior))["image"].mode()
+        openl = self.heads["decoder"](self.dynamics.get_feat(prior))
         reward_prior = self.heads["reward"](self.dynamics.get_feat(prior)).mode()
+        
+        if "Craftax" in self.config['task']:
+            # in Craftax we run in symbolic mode with no image, so to make a video we need to convert
+            
+            recon = state2img(recon["state"].mode()[:6], env_state)
+            truth = state2img(data["state"][:6], env_state)
+            openl = state2img(openl['state'][:6], env_state)
+
+        else:
+            recon = recon["image"].mode()[:6]
+            truth = data["image"][:6]
+            openl = ["image"].mode()
+        
+
         # observed image is given until 5 steps
         model = torch.cat([recon[:, :5], openl], 1)
-        truth = data["image"][:6]
         model = model
         error = (model - truth + 1.0) / 2.0
 

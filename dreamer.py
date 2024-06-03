@@ -76,7 +76,8 @@ class Dreamer(nn.Module):
                     self._logger.scalar(name, float(np.mean(values)))
                     self._metrics[name] = []
                 if self._config.video_pred_log:
-                    openl = self._wm.video_pred(next(self._dataset))
+                    # FIXME need to provide this state or synthetic one
+                    openl = self._wm.video_pred(next(self._dataset), env_state)
                     self._logger.video("train_openl", to_np(openl))
                 self._logger.write(fps=True)
 
@@ -192,6 +193,11 @@ def make_env(config, mode, id):
 
         env = crafter.Crafter(task, config.size, seed=config.seed + id)
         env = wrappers.OneHotAction(env)
+    elif suite == "craftax":
+        from envs import craftax_env
+
+        env = craftax_env.Craftax(task,seed=config.seed + id)
+        env = wrappers.OneHotAction(env)
     elif suite == "minecraft":
         import envs.minecraft as minecraft
 
@@ -226,6 +232,7 @@ def main(config):
     step = count_steps(config.traindir)
     # step in logger is environmental step
     tlogger = tools.Logger(logdir, config.action_repeat * step)
+    logger.add(logdir/"logger.log")
 
     logger.info("Create envs.")
     if config.offline_traindir:
@@ -303,7 +310,7 @@ def main(config):
         agent._should_pretrain._once = False
 
     # make sure eval will be executed once after config.steps
-    with tqdm(total=config.steps + config.eval_every) as pbar:
+    with tqdm(total=config.steps + config.eval_every, unit='step') as pbar:
         while agent._step < config.steps + config.eval_every:
             tlogger.write()
             if config.eval_episode_num > 0:
@@ -321,7 +328,8 @@ def main(config):
                     pbar=pbar,
                 )
                 if config.video_pred_log:
-                    video_pred = agent._wm.video_pred(next(eval_dataset))
+                    env_state = eval_envs[0].env_state
+                    video_pred = agent._wm.video_pred(next(eval_dataset), env_state)
                     tlogger.video("eval_openl", to_np(video_pred))
             logger.info("Start training.")
             state = tools.simulate(
@@ -333,6 +341,7 @@ def main(config):
                 limit=config.dataset_size,
                 steps=config.eval_every,
                 state=state,
+                pbar=pbar,
             )
             items_to_save = {
                 "agent_state_dict": agent.state_dict(),
@@ -340,7 +349,7 @@ def main(config):
             }
             torch.save(items_to_save, logdir / "latest.pt")
             logger.info(f"Saved model to {logdir / 'latest.pt'}")
-            pbar.update(agent._step-pbar.n) # 16858 at a time
+            # pbar.update(agent._step-pbar.n) # 16858 at a time
     for env in train_envs + eval_envs:
         try:
             env.close()
