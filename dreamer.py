@@ -308,6 +308,7 @@ def main(config):
         agent.load_state_dict(checkpoint["agent_state_dict"])
         tools.recursively_load_optim_state_dict(agent, checkpoint["optims_state_dict"])
         agent._should_pretrain._once = False
+        logger.warning(f"Loaded model from {logdir / 'latest.pt'}")
 
     # make sure eval will be executed once after config.steps
     with tqdm(total=config.steps + config.eval_every, unit='step') as pbar:
@@ -356,13 +357,12 @@ def main(config):
         except Exception:
             pass
 
-
-if __name__ == "__main__":
+def parse_args(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--configs", nargs="+")
-    args, remaining = parser.parse_known_args()
+    args, remaining = parser.parse_known_args(argv[1:])
     configs = yaml.safe_load(
-        (pathlib.Path(sys.argv[0]).parent / "configs.yaml").read_text()
+        (pathlib.Path(argv[0]).parent / "configs.yaml").read_text()
     )
 
     def recursive_update(base, update):
@@ -380,4 +380,8 @@ if __name__ == "__main__":
     for key, value in sorted(defaults.items(), key=lambda x: x[0]):
         arg_type = tools.args_type(value)
         parser.add_argument(f"--{key}", type=arg_type, default=arg_type(value))
-    main(parser.parse_args(remaining))
+    args = parser.parse_args(remaining)
+    return args
+
+if __name__ == "__main__":
+    main(parse_args())

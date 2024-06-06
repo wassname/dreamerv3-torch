@@ -62,7 +62,7 @@ defaults:
   initial: 'learned'
 
   # Training
-  batch_size: 256
+  batch_size: 64
   batch_length: 64
   train_ratio: 512
   pretrain: 100
@@ -136,17 +136,58 @@ craftax:
   action_repeat: 1
   envs: 1
   train_ratio: 512
-  video_pred_log: false # FIXME
+  video_pred_log: false
   dyn_hidden: 1024
   dyn_deter: 4096
   units: 1024
-  encoder: {cnn_keys: '$^', mlp_keys: "state", mlp_layers: 5, mlp_units: 1024, }
-  decoder: {cnn_keys: '$^', mlp_keys: "state", mlp_layers: 5, mlp_units: 1024}
+  encoder: {cnn_keys: '$^', mlp_keys: "state", mlp_layers: 4, mlp_units: 512, }
+  decoder: {cnn_keys: '$^', mlp_keys: "state", mlp_layers: 4, mlp_units: 512}
   actor: {layers: 5, dist: 'onehot', std: 'none'}
   value: {layers: 5}
   reward_head: {layers: 5}
   cont_head: {layers: 5}
   imag_gradient: 'reinforce'
+
+craftax_small:
+  task: craftax_Craftax-Symbolic-AutoReset-v1
+  step: 1e6
+  action_repeat: 1
+  envs: 1
+  train_ratio: 512
+  video_pred_log: false
+  dyn_hidden: 512
+  dyn_deter: 512
+  units: 512
+  encoder: {cnn_keys: '$^', mlp_keys: "state", mlp_layers: 3, mlp_units: 256}
+  decoder: {cnn_keys: '$^', mlp_keys: "state", mlp_layers: 3, mlp_units: 256}
+  actor: {layers: 3, dist: 'onehot', std: 'none'}
+  value: {layers: 3}
+  reward_head: {layers: 3}
+  cont_head: {layers: 3}
+  imag_gradient: 'reinforce'
+  batch_size: 128
+  batch_length: 16
+
+
+craftax_smaller:
+  task: craftax_Craftax-Symbolic-AutoReset-v1
+  step: 1e6
+  action_repeat: 1
+  envs: 1
+  train_ratio: 256
+  video_pred_log: false
+  dyn_hidden: 256
+  dyn_deter: 1024
+  units: 256
+  encoder: {cnn_keys: '$^', mlp_keys: "state", mlp_layers: 2, mlp_units: 256, }
+  decoder: {cnn_keys: '$^', mlp_keys: "state", mlp_layers: 2, mlp_units: 256}
+  actor: {layers: 2, dist: 'onehot', std: 'none'}
+  value: {layers: 2}
+  reward_head: {layers: 2}
+  cont_head: {layers: 2}
+  imag_gradient: 'reinforce'
+  batch_size: 256
+  batch_length: 16
 
 atari100k:
   steps: 4e5

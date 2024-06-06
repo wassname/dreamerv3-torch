@@ -38,6 +38,7 @@ imageio = "^2.34.1"
 craftax = {path = "/media/wassname/SGIronWolf/projects5/2024/Craftax", develop = true }
 # craftax = {git = "https://github.com/wassname/Craftax" , develop = true } 
 chex = "^0.1.86"
+torchinfo = "^1.8.0"
 
 [tool.poetry.group.dev.dependencies]
 ipywidgets = "^8.1.3"

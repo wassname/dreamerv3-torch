@@ -224,6 +224,8 @@ class Craftax:
     def step(self, action):
         state, reward, done, info = self._env.step(action)
 
+        info2 = {k.replace('Ach','log_ach'):v for k,v in info.items()}
+
         reward = np.float32(reward)
         obs = {
             "image": self.get_image(),
@@ -231,7 +233,7 @@ class Craftax:
             "is_first": False,
             "is_last": done,
             "is_terminal": info["discount"] == 0,
-            **info,
+            **info2,
         }
         return obs, reward, done, info
 

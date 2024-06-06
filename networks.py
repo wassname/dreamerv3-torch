@@ -320,8 +320,8 @@ class MultiEncoder(nn.Module):
             for k, v in shapes.items()
             if len(v) in (1, 2) and re.match(mlp_keys, k)
         }
-        logger.info("Encoder CNN shapes:", self.cnn_shapes)
-        logger.info("Encoder MLP shapes:", self.mlp_shapes)
+        logger.info("Encoder CNN shapes: {}", self.cnn_shapes)
+        logger.info("Encoder MLP shapes: {}", self.mlp_shapes)
 
         self.outdim = 0
         if self.cnn_shapes:
@@ -387,8 +387,8 @@ class MultiDecoder(nn.Module):
             for k, v in shapes.items()
             if len(v) in (1, 2) and re.match(mlp_keys, k)
         }
-        logger.info("Decoder CNN shapes: %s", self.cnn_shapes)
-        logger.info("Decoder MLP shapes: %s", self.mlp_shapes)
+        logger.info("Decoder CNN shapes: {}", self.cnn_shapes)
+        logger.info("Decoder MLP shapes: {}", self.mlp_shapes)
 
         if self.cnn_shapes:
             some_shape = list(self.cnn_shapes.values())[0]
