@@ -99,7 +99,7 @@ class WorldModel(nn.Module):
             opt=config.opt,
             use_amp=self._use_amp,
         )
-        logger.info(f"World Model\n{summary(self, row_settings=['var_names'],)}")
+        logger.info(f"World Model\n{summary(self, row_settings=['depth', 'var_names'], verbose=False)}")
         # other losses are scaled by 1.0.
         self._scales = dict(
             reward=config.reward_head["loss_scale"],

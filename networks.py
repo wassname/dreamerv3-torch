@@ -12,7 +12,7 @@ from einops import rearrange
 from torchinfo import summary
 
 def my_summary(model, input_data):
-    return summary(model, input_data, col_names=('input_size', 'output_size', 'num_params', 'mult_adds'), verbose=0, row_settings=['depth', 'var_names', 'ascii_only'])
+    return summary(model, input_data, col_names=('input_size', 'output_size', 'num_params', 'mult_adds'), verbose=0, row_settings=['depth', 'var_names'])
 
 
 class RSSM(nn.Module):

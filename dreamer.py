@@ -311,7 +311,7 @@ def main(config):
         logger.warning(f"Loaded model from {logdir / 'latest.pt'}")
 
     # make sure eval will be executed once after config.steps
-    with tqdm(total=config.steps + config.eval_every, unit='step') as pbar:
+    with tqdm(total=config.steps + config.eval_every, unit='step', mininterval=60) as pbar:
         while agent._step < config.steps + config.eval_every:
             tlogger.write()
             if config.eval_episode_num > 0:
