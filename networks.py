@@ -560,6 +560,7 @@ class ConvDecoder(nn.Module):
         [m.apply(tools.weight_init) for m in layers[:-1]]
         layers[-1].apply(tools.uniform_weight_init(outscale))
         self.layers = nn.Sequential(*layers)
+        self.outdim = out_dim
 
     def calc_same_pad(self, k, s, d):
         val = d * (k - 1) - s + 1
@@ -569,17 +570,10 @@ class ConvDecoder(nn.Module):
 
     def forward(self, features, dtype=None):
         x = self._linear_layer(features)
-        # (batch, time, -1) -> (batch * time, h, w, ch)
-        x = x.reshape(
-            [-1, self._minres, self._minres, self._embed_size // self._minres**2]
-        )
-        # (batch, time, -1) -> (batch * time, ch, h, w)
-        x = x.permute(0, 3, 1, 2)
+        x = rearrange(x, "b t (h w c) -> (b t) c h w", h=self._minres, w=self._minres)
         x = self.layers(x)
-        # (batch, time, -1) -> (batch, time, ch, h, w)
-        mean = x.reshape(features.shape[:-1] + self._shape)
-        # (batch, time, ch, h, w) -> (batch, time, h, w, ch)
-        mean = mean.permute(0, 1, 3, 4, 2)
+        mean = rearrange(x, "(b t) c h w -> b t h w c ", t=features.shape[1])
+        # assert mean.shape[-2]==self.outdim, f"{mean.shape[-2]}!={self.outdim}"
         if self._cnn_sigmoid:
             mean = F.sigmoid(mean)
         else:

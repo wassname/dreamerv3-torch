@@ -155,31 +155,13 @@ craftax_small:
   envs: 1
   train_ratio: 512
   video_pred_log: false
-  dyn_hidden: 512
-  dyn_deter: 512
-  units: 512
-  encoder: {cnn_keys: '$^', mlp_keys: "state", mlp_layers: 3, mlp_units: 256}
-  decoder: {cnn_keys: '$^', mlp_keys: "state", mlp_layers: 3, mlp_units: 256}
-  actor: {layers: 3, dist: 'onehot', std: 'none'}
-  value: {layers: 3}
-  reward_head: {layers: 3}
-  cont_head: {layers: 3}
-  imag_gradient: 'reinforce'
-  batch_size: 128
-  batch_length: 16
-
-craftax_small2:
-  task: craftax_Craftax-Symbolic-AutoReset-v1
-  step: 1e6
-  action_repeat: 1
-  envs: 1
-  train_ratio: 512
-  video_pred_log: false
   dyn_hidden: 256
-  dyn_deter: 512
+  dyn_deter: 256
+  dyn_stoch: 24
+  dyn_discrete: 24
   # note: depth is cnn hidden_dim
-  encoder: {cnn_keys: 'state_map', cnn_depth: 16, kernel_size: 4, minres: 4, mlp_keys: "state_inventory", mlp_layers: 2, mlp_units: 16}
-  decoder: {cnn_keys: 'state_map', cnn_depth: 16, kernel_size: 4, minres: 4, mlp_keys: "state_inventory", mlp_layers: 2, mlp_units: 16}
+  encoder: {cnn_keys: 'state_map', cnn_depth: 32, kernel_size: 4, minres: 2, mlp_keys: "state_inventory", mlp_layers: 2, mlp_units: 16}
+  decoder: {cnn_keys: 'state_map', cnn_depth: 32, kernel_size: 4, minres: 2, mlp_keys: "state_inventory", mlp_layers: 2, mlp_units: 16}
   actor: {layers: 3, dist: 'onehot', std: 'none'}
   value: {layers: 3}
   # note units is the head hidden_dim
@@ -188,27 +170,31 @@ craftax_small2:
   cont_head: {layers: 3}
   imag_gradient: 'reinforce'
   batch_size: 256
-  batch_length: 16
+  batch_length: 32
 
 craftax_smaller:
   task: craftax_Craftax-Symbolic-AutoReset-v1
   step: 1e6
   action_repeat: 1
   envs: 1
-  train_ratio: 256
+  train_ratio: 512
   video_pred_log: false
-  dyn_hidden: 256
-  dyn_deter: 1024
-  units: 256
-  encoder: {cnn_keys: '$^', mlp_keys: "state", mlp_layers: 2, mlp_units: 256, }
-  decoder: {cnn_keys: '$^', mlp_keys: "state", mlp_layers: 2, mlp_units: 256}
+  dyn_hidden: 128
+  dyn_deter: 128
+  dyn_stoch: 16
+  dyn_discrete: 16
+  # note: depth is cnn hidden_dim
+  encoder: {cnn_keys: 'state_map', cnn_depth: 16, kernel_size: 4, minres: 2, mlp_keys: "state_inventory", mlp_layers: 2, mlp_units: 8}
+  decoder: {cnn_keys: 'state_map', cnn_depth: 16, kernel_size: 4, minres: 2, mlp_keys: "state_inventory", mlp_layers: 2, mlp_units: 8}
   actor: {layers: 2, dist: 'onehot', std: 'none'}
   value: {layers: 2}
+  # note units is the head hidden_dim
+  units: 128
   reward_head: {layers: 2}
   cont_head: {layers: 2}
   imag_gradient: 'reinforce'
   batch_size: 256
-  batch_length: 16
+  batch_length: 32
 
 atari100k:
   steps: 4e5

@@ -360,9 +360,14 @@ def main(config):
 def parse_args(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--configs", nargs="+")
+    if argv is None:
+        argv = sys.argv
     args, remaining = parser.parse_known_args(argv[1:])
+
+    # load config, using relative path
+    root_dir = pathlib.Path(__file__).parent
     configs = yaml.safe_load(
-        (pathlib.Path(argv[0]).parent / "configs.yaml").read_text()
+        (root_dir / "configs.yaml").read_text()
     )
 
     def recursive_update(base, update):
@@ -376,6 +381,7 @@ def parse_args(argv=None):
     defaults = {}
     for name in name_list:
         recursive_update(defaults, configs[name])
+    
     parser = argparse.ArgumentParser()
     for key, value in sorted(defaults.items(), key=lambda x: x[0]):
         arg_type = tools.args_type(value)

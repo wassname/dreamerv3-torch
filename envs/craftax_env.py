@@ -195,8 +195,8 @@ def reshape_state(state: Float[Tensor, 'frames state_dim']) -> (Float[Tensor,'fr
     https://github.com/MichaelTMatthews/Craftax/blob/main/obs_description.md
     """
     map = rearrange(state[:, :8217], 'frames (h w c) -> frames h w c', h=9, w=11, c=83)
-    # now pad from (9,11) to (12,12) using torch
-    map = F.pad(map, (0, 0, 1, 0, 2, 1))
+    # now pad from (9,11) to (16,16) so that it's 2*n
+    map = F.pad(map, (0, 0, 3, 2, 4, 3))
     map = rearrange(map, 'f h w c -> h w (f c)')
     inventories = rearrange(state[:, 8217:], 'frames c -> (frames c)')
     return map, inventories
@@ -214,9 +214,9 @@ class Craftax:
     def observation_space(self):
         frames = self._env.observation_space.shape[0]
         spaces = {
-            "state": gym.spaces.Box(0, 1, (np.prod(self._env.observation_space.shape),), dtype=np.float32),
-            "state_map": gym.spaces.Box(0, 1, (12, 12, frames*83), dtype=np.float32),
-            "state_inventory": gym.spaces.Box(0, 1, (frames * 51,), dtype=np.float32),
+            # "state": gym.spaces.Box(0, 1, (np.prod(self._env.observation_space.shape),), dtype=np.float32),
+            "state_map": gym.spaces.Box(0, 1, (16, 16, frames*83), dtype=np.float16),
+            "state_inventory": gym.spaces.Box(0, 1, (frames * 51,), dtype=np.float16),
             "image": gym.spaces.Box(0, 255, (130, 110, 3), dtype=np.uint8),
             "is_first": gym.spaces.Box(-np.inf, np.inf, (1,), dtype=np.uint8),
             "is_last": gym.spaces.Box(-np.inf, np.inf, (1,), dtype=np.uint8),
