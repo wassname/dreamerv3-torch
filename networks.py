@@ -9,6 +9,10 @@ from torch import distributions as torchd
 from loguru import logger
 import tools
 from einops import rearrange
+from torchinfo import summary
+
+def my_summary(model, input_data):
+    return summary(model, input_data, col_names=('input_size', 'output_size', 'num_params', 'mult_adds'), verbose=0, row_settings=['depth', 'var_names', 'ascii_only'])
 
 
 class RSSM(nn.Module):
@@ -332,6 +336,7 @@ class MultiEncoder(nn.Module):
                 input_shape, cnn_depth, act, norm, kernel_size, minres
             )
             self.outdim += self._cnn.outdim
+            logger.debug(f"Encoder cnn\n{my_summary(self._cnn, (1,)+input_shape)}")
         if self.mlp_shapes:
             input_size = sum([sum(v) for v in self.mlp_shapes.values()])
             self._mlp = MLP(
@@ -344,6 +349,7 @@ class MultiEncoder(nn.Module):
                 symlog_inputs=symlog_inputs,
                 name="Encoder",
             )
+            logger.debug(f"Encoder mlp\n{my_summary(self._mlp, (1,input_size))}")
             self.outdim += mlp_units
 
     def forward(self, obs):
@@ -405,6 +411,7 @@ class MultiDecoder(nn.Module):
                 outscale=outscale,
                 cnn_sigmoid=cnn_sigmoid,
             )
+            logger.debug(f"Decoder cnn\n{my_summary(self._cnn, (1,1,feat_size))}")
         if self.mlp_shapes:
             self._mlp = MLP(
                 feat_size,
@@ -417,6 +424,7 @@ class MultiDecoder(nn.Module):
                 outscale=outscale,
                 name="Decoder",
             )
+            logger.debug(f"Decoder mlp\n{my_summary(self._mlp, (1,feat_size))}")
         self._image_dist = image_dist
 
     def forward(self, features):

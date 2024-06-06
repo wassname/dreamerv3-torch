@@ -5,7 +5,7 @@ from torch import nn
 import networks
 import tools
 from loguru import logger
-
+from torchinfo import summary
 from envs.craftax_env import state2img
 
 to_np = lambda x: x.detach().cpu().numpy()
@@ -99,9 +99,7 @@ class WorldModel(nn.Module):
             opt=config.opt,
             use_amp=self._use_amp,
         )
-        logger.info(
-            f"Optimizer model_opt has {sum(param.numel() for param in self.parameters())} variables."
-        )
+        logger.info(f"World Model\n{summary(self, row_settings=['var_names'],)}")
         # other losses are scaled by 1.0.
         self._scales = dict(
             reward=config.reward_head["loss_scale"],

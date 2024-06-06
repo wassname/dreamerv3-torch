@@ -6,7 +6,7 @@ export TQDM_MININTERVAL := "30"
 
 main:
   . ./.venv/bin/activate
-  python dreamer.py --configs craftax_small --logdir ./logdir/crafter
+  python dreamer.py --configs craftax_smaller --logdir ./logdir/crafterer
   
 logs:
   tensorboard --logdir logdir/craftax 

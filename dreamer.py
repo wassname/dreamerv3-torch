@@ -350,7 +350,7 @@ def main(config):
             }
             torch.save(items_to_save, logdir / "latest.pt")
             logger.info(f"Saved model to {logdir / 'latest.pt'}")
-            # pbar.update(agent._step-pbar.n) # 16858 at a time
+            pbar.update(agent._step-pbar.n) # 16858 at a time
     for env in train_envs + eval_envs:
         try:
             env.close()
@@ -358,6 +358,7 @@ def main(config):
             pass
 
 def parse_args(argv=None):
+    # first load config name as arg from command line
     parser = argparse.ArgumentParser()
     parser.add_argument("--configs", nargs="+")
     if argv is None:
@@ -382,11 +383,16 @@ def parse_args(argv=None):
     for name in name_list:
         recursive_update(defaults, configs[name])
     
+    # defaults = {k:tools.args_type(v)(v) for k, v in defaults.items()}
+    # config = argparse.Namespace(**defaults)
+
+    # now use argparse to parse config, allowing us to override config with any extra args from cli. You can even use -h
     parser = argparse.ArgumentParser()
     for key, value in sorted(defaults.items(), key=lambda x: x[0]):
         arg_type = tools.args_type(value)
         parser.add_argument(f"--{key}", type=arg_type, default=arg_type(value))
     args = parser.parse_args(remaining)
+    logger.info(f"config={args}")
     return args
 
 if __name__ == "__main__":

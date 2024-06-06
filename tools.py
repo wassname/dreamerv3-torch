@@ -15,7 +15,7 @@ from torch import nn
 from torch.nn import functional as F
 from torch import distributions as torchd
 from torch.utils.tensorboard import SummaryWriter
-
+from contextlib import contextmanager
 
 to_np = lambda x: x.detach().cpu().numpy()
 
@@ -82,7 +82,7 @@ class Logger:
             scalars.append(("fps", self._compute_fps(step)))
         # print out the episode stats
         stats = " / ".join(f"{k.replace('log_achievement_', '')} <red>{v:.1f}</red>" for k, v in scalars)
-        logger.opt(colors=True).info(f"[{step}] {stats}")
+        logger.opt(colors=True).debug(f"[{step}] {stats}")
         with (self._logdir / "metrics.jsonl").open("a") as f:
             f.write(json.dumps({"step": step, **dict(scalars)}) + "\n")
         for name, value in scalars:
@@ -127,6 +127,14 @@ class Logger:
         self._writer.add_video(name, value, step, 16)
 
 
+@contextmanager
+def cond_tqdm(pbar=None, *args, **kwargs):
+    if pbar is None:
+        with tqdm(*args, **kwargs) as pbar:
+            yield pbar
+    else:
+        yield pbar
+
 def simulate(
     agent,
     envs,
@@ -151,7 +159,7 @@ def simulate(
         reward = [0] * len(envs)
     else:
         step, episode, done, length, obs, agent_state, reward = state
-    with tqdm(total=steps, disable=pbar is None) as pbar:
+    with cond_tqdm(total=steps, pbar=pbar) as pbar:
         while (steps and step < steps) or (episodes and episode < episodes):
             # reset envs if necessary
             if done.any():
