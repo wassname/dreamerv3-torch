@@ -8,6 +8,7 @@ import torch.nn.functional as F
 from torch import distributions as torchd
 from loguru import logger
 import tools
+from einops import rearrange
 
 
 class RSSM(nn.Module):
@@ -485,15 +486,16 @@ class ConvEncoder(nn.Module):
 
     def forward(self, obs):
         obs -= 0.5
-        # (batch, time, h, w, ch) -> (batch * time, h, w, ch)
-        x = obs.reshape((-1,) + tuple(obs.shape[-3:]))
-        # (batch * time, h, w, ch) -> (batch * time, ch, h, w)
-        x = x.permute(0, 3, 1, 2)
-        x = self.layers(x)
-        # (batch * time, ...) -> (batch * time, -1)
-        x = x.reshape([x.shape[0], np.prod(x.shape[1:])])
-        # (batch * time, -1) -> (batch, time, -1)
-        return x.reshape(list(obs.shape[:-3]) + [x.shape[-1]])
+        if obs.ndim == 4:
+            x = rearrange(obs, "b h w c -> b c h w")
+            x = self.layers(x)
+            x = rearrange(x, "b c h w -> b (c h w)")
+        else:
+            x = rearrange(obs, "b t h w c -> (b t) c h w")
+            x = self.layers(x)
+            x = rearrange(x, "(b t) c h w -> b t (c h w)", t=obs.shape[1])
+        assert x.shape[-1] == self.outdim, f"{x.shape[-1]}!={self.outdim}"
+        return x
 
 
 class ConvDecoder(nn.Module):
@@ -605,6 +607,7 @@ class MLP(nn.Module):
         symlog_inputs=False,
         device="cuda",
         name="NoName",
+        embedding_dim=None,
     ):
         super(MLP, self).__init__()
         self._shape = (shape,) if isinstance(shape, int) else shape
@@ -623,9 +626,15 @@ class MLP(nn.Module):
 
         self.layers = nn.Sequential()
         for i in range(layers):
-            self.layers.add_module(
-                f"{name}_linear{i}", nn.Linear(inp_dim, units, bias=False)
-            )
+            if i==0 and embedding_dim is not None:
+                self.layers.add_module(
+                    f"{name}_embed", nn.Embedding(inp_dim, units)
+                )
+                inp_dim = units
+            else:
+                self.layers.add_module(
+                    f"{name}_linear{i}", nn.Linear(inp_dim, units, bias=False)
+                )
             if norm:
                 self.layers.add_module(
                     f"{name}_norm{i}", nn.LayerNorm(units, eps=1e-03)

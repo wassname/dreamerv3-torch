@@ -1,5 +1,7 @@
 import gymnasium as gym
 import numpy as np
+from einops import rearrange
+import torch.nn.functional as F
 
 from craftax.craftax_env import make_craftax_env_from_name
 from craftax.craftax.play_craftax import CraftaxRenderer
@@ -185,6 +187,20 @@ def create_craftax_env(
     env = CraftaxCompatWrapper(env)
     return env
 
+
+def reshape_state(state: Float[Tensor, 'frames state_dim']) -> (Float[Tensor,'frames h w c'], Float[Tensor,'frames inv']):
+    """
+    reshapes state into map and inv
+
+    https://github.com/MichaelTMatthews/Craftax/blob/main/obs_description.md
+    """
+    map = rearrange(state[:, :8217], 'frames (h w c) -> frames h w c', h=9, w=11, c=83)
+    # now pad from (9,11) to (12,12) using torch
+    map = F.pad(map, (0, 0, 1, 0, 2, 1))
+    map = rearrange(map, 'f h w c -> h w (f c)')
+    inventories = rearrange(state[:, 8217:], 'frames c -> (frames c)')
+    return map, inventories
+
 class Craftax:
     metadata = {}
 
@@ -196,8 +212,11 @@ class Craftax:
 
     @property
     def observation_space(self):
+        frames = self._env.observation_space.shape[0]
         spaces = {
             "state": gym.spaces.Box(0, 1, (np.prod(self._env.observation_space.shape),), dtype=np.float32),
+            "state_map": gym.spaces.Box(0, 1, (12, 12, frames*83), dtype=np.float32),
+            "state_inventory": gym.spaces.Box(0, 1, (frames * 51,), dtype=np.float32),
             "image": gym.spaces.Box(0, 255, (130, 110, 3), dtype=np.uint8),
             "is_first": gym.spaces.Box(-np.inf, np.inf, (1,), dtype=np.uint8),
             "is_last": gym.spaces.Box(-np.inf, np.inf, (1,), dtype=np.uint8),
@@ -227,9 +246,12 @@ class Craftax:
         info2 = {k.replace('Ach','log_ach'):v for k,v in info.items()}
 
         reward = np.float32(reward)
+        state_map, state_inv = reshape_state(state)
         obs = {
             "image": self.get_image(),
             "state": state.flatten(),
+            "state_map": state_map,
+            "state_inventory": state_inv,
             "is_first": False,
             "is_last": done,
             "is_terminal": info["discount"] == 0,
@@ -248,9 +270,12 @@ class Craftax:
     
     def reset(self, seed=None, options=None):
         state, info = self._env.reset()
+        state_map, state_inv = reshape_state(state)
         obs = {
             "image": self.get_image(),
             "state": state.flatten(),
+            "state_map": state_map,
+            "state_inventory": state_inv,
             "is_first": True,
             "is_last": False,
             "is_terminal": False,
