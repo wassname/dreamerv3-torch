@@ -308,7 +308,7 @@ def main(config):
         agent.load_state_dict(checkpoint["agent_state_dict"])
         tools.recursively_load_optim_state_dict(agent, checkpoint["optims_state_dict"])
         agent._should_pretrain._once = False
-        logger.warning(f"Loaded model from {logdir / 'latest.pt'}")
+        logger.warning(f"⚠️ Loaded model from {logdir / 'latest.pt'}, this could invalidate your step budget")
 
     # make sure eval will be executed once after config.steps
     with tqdm(total=config.steps + config.eval_every, unit='step', mininterval=60) as pbar:
@@ -360,7 +360,7 @@ def main(config):
 def parse_args(argv=None):
     # first load config name as arg from command line
     parser = argparse.ArgumentParser()
-    parser.add_argument("--configs", nargs="+")
+    parser.add_argument("--configs", nargs="+", help="one or more config files")
     if argv is None:
         argv = sys.argv
     args, remaining = parser.parse_known_args(argv[1:])
@@ -391,6 +391,7 @@ def parse_args(argv=None):
     for key, value in sorted(defaults.items(), key=lambda x: x[0]):
         arg_type = tools.args_type(value)
         parser.add_argument(f"--{key}", type=arg_type, default=arg_type(value))
+    parser.print_usage()
     args = parser.parse_args(remaining)
     logger.info(f"config={args}")
     return args
