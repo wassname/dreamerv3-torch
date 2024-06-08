@@ -149,30 +149,33 @@ craftax:
   imag_gradient: 'reinforce'
   time_limit: 4000
 
-# craftax_small:
-#   task: craftax_Craftax-Symbolic-AutoReset-v1
-#   step: 1e6
-#   action_repeat: 1
-#   envs: 1
-#   train_ratio: 512
-#   video_pred_log: false
-#   dyn_hidden: 256
-#   dyn_deter: 256
-#   dyn_stoch: 24
-#   dyn_discrete: 24
-#   # note: depth is cnn hidden_dim
-#   encoder: {cnn_keys: 'state_map', cnn_depth: 32, kernel_size: 4, minres: 2, mlp_keys: "state_inventory", mlp_layers: 2, mlp_units: 16}
-#   decoder: {cnn_keys: 'state_map', cnn_depth: 32, kernel_size: 4, minres: 2, mlp_keys: "state_inventory", mlp_layers: 2, mlp_units: 16}
-#   actor: {layers: 3, dist: 'onehot', std: 'none'}
-#   value: {layers: 3}
-#   # note units is the head hidden_dim
-#   units: 256
-#   reward_head: {layers: 3}
-#   cont_head: {layers: 3}
-#   imag_gradient: 'reinforce'
-#   batch_size: 256
-#   batch_length: 32
-#   time_limit: 4000
+craftax_small:
+  task: craftax_Craftax-Symbolic-AutoReset-v1
+  step: 1e6
+  action_repeat: 1
+  envs: 1
+  train_ratio: 512
+  video_pred_log: true
+  dyn_hidden: 256
+  dyn_deter: 512
+  dyn_stoch: 24
+  dyn_discrete: 24
+  # note: depth is cnn hidden_dim
+  encoder: {cnn_keys: 'state_map', cnn_depth: 48, kernel_size: 4, minres: 2, mlp_keys: "state_inventory", mlp_layers: 2, mlp_units: 128}
+  decoder: {cnn_keys: 'state_map', cnn_depth: 48, kernel_size: 4, minres: 2, mlp_keys: "state_inventory", mlp_layers: 2, mlp_units: 128}
+  actor: {layers: 3, dist: 'onehot', std: 'none'}
+  value: {layers: 3}
+  # note units is the head hidden_dim
+  units: 256
+  reward_head: {layers: 4}
+  cont_head: {layers: 4}
+  imag_gradient: 'reinforce'
+  batch_size: 96
+  batch_length: 48
+  time_limit: 6000
+  dataset_size: 20_000
+  precision: 16
+  expl_behavior: plan2explore
 
 craftax_smaller:
   task: craftax_Craftax-Symbolic-AutoReset-v1
